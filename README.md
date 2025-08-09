@@ -30,7 +30,7 @@ LiteRedis is designed for developers who love Redis-style data access but don’
 
 ## 🔍 Feature Comparison
 
-| Feature                      | Redis Server | SQLite     | RocksDB    | LMDB       | **Redis Light** |
+| Feature                      | Redis Server | SQLite     | RocksDB    | LMDB       | **LiteRedis** |
 |-----------------------------|--------------|------------|------------|------------|-----------------|
 | Embeddable                  | ❌ Daemon    | ✅         | ✅         | ✅         | ✅ ✅ ✅         |
 | In-Memory Mode              | ✅           | ⚠️ Disk    | ⚠️ Mostly  | ✅         | ✅              |
@@ -48,7 +48,7 @@ LiteRedis is designed for developers who love Redis-style data access but don’
 ### C++ (Library)
 
 ```cpp
-#include "redis_light.h"
+#include "lite_redis.h"
 
 RedisLight db;
 db.set("foo", "bar");
@@ -60,11 +60,11 @@ db.save("snapshot.rdb");
 ### CLI
 
 ```bash
-$ ./redislight-cli SET foo bar
+$ ./literedis-cli SET foo bar
 OK
-$ ./redislight-cli GET foo
+$ ./literedis-cli GET foo
 bar
-$ ./redislight-cli EXPIRE foo 60
+$ ./literedis-cli EXPIRE foo 60
 OK
 ```
 
@@ -78,7 +78,7 @@ OK
 make lib
 ```
 
-Produces `libredislight.a`
+Produces `libliteredis.a`
 
 ### CLI Tool
 
@@ -86,12 +86,12 @@ Produces `libredislight.a`
 make cli
 ```
 
-Produces `./redislight-cli`
+Produces `./literedis-cli`
 
 ### Include in Your Project
 
 ```cpp
-#include "redis_light.h"
+#include "lite_redis.h"
 ```
 
 No external dependencies required.
