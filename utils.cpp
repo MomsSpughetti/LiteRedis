@@ -25,3 +25,11 @@ std::string get_client_info_string(const struct sockaddr_in& client_addr) {
 
     return oss.str();
 }
+
+std::string get_client_info_string_from_conn_fd(int fd) {
+    struct sockaddr_in client_addr = {};
+    socklen_t len = sizeof(client_addr);
+    getpeername(fd, (struct sockaddr*)&client_addr, &len);
+
+    return get_client_info_string(client_addr);
+}

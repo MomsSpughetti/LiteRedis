@@ -31,5 +31,6 @@ void print (std::string);
 void error (std::string);
 
 std::string get_client_info_string(const struct sockaddr_in& client_addr);
+std::string get_client_info_string_from_conn_fd(int fd);
 
 #endif
