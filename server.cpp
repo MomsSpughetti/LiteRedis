@@ -59,8 +59,9 @@ void handle_read(Conn* conn) {
 
     // 1. perform a non-blocking read - the socket was set to non blocking using fd_set_non_blocking
     uint8_t buf[64 * 1024];
+    LOG_INFO("Now calling read()");
     ssize_t rv = read(conn->fd, buf, sizeof(buf));
-
+    LOG_INFO("Finished read()");
     if (rv <= 0) { // IO error or EOF
         conn->want_close = true;
         return;
@@ -73,7 +74,8 @@ void handle_read(Conn* conn) {
     // 4. Process the parsed message
     // 5. Remove the mesage from Conn::incoming
 
-    try_one_request(conn);
+    // Pipelined requests handling
+    while (try_one_request(conn)) {}
 
     // ...
 
@@ -90,18 +92,21 @@ void handle_read(Conn* conn) {
 
 }
 
-void buf_append(std::vector<uint8_t> &buf, const uint8_t *data, size_t len) {
-    buf.insert(buf.end(), data, data + len);
+void buf_append(BufferArray<uint8_t> &buf, const uint8_t *data, size_t len) {
+    buf.push_back(data, len);
 }
 
-void buf_consume (std::vector<uint8_t> &buf, size_t len) {
-    buf.erase(buf.begin(), buf.begin() + len);
+void buf_consume (BufferArray<uint8_t> &buf, size_t len) {
+    buf.erase_front(len);
 }
 
 
 void handle_write(Conn *conn) {
     assert(conn->outgoing.size() > 0);
     int rv = write(conn->fd, conn->outgoing.data(), conn->outgoing.size());
+    if (rv < 0 && errno == EAGAIN) {
+        return; // actually not ready
+    }
     if (rv <= 0) {
         conn->want_close = true;
         return;
@@ -140,13 +145,13 @@ bool try_one_request(Conn* conn) {
         LOG_ERROR("Message too long!");
         conn->want_close = true;
         return false;
-    } else if (packet_body_len > (conn->incoming.size() - k_max_msg_len)) {
+    } else if (packet_body_len > (conn->incoming.size() - k_msg_size_len)) {
         // not enough data
         return false;
     }
 
     // Process request
-    const uint8_t* request = &conn->incoming[k_msg_size_len];
+    const uint8_t* request = conn->incoming.data() + k_msg_size_len;
     print("\nClient says: \n" + std::string((char*)conn->incoming.data() + k_msg_size_len, packet_body_len));
 
     // Generate response for client
@@ -241,6 +246,7 @@ int main (int argc, char* argv[]) {
     std::vector<struct pollfd> poll_args;
     
     while (true) {
+        LOG_INFO("New poll round!");
         // Prepare arguments for poll
         poll_args.clear();
         // listening socket at index 0
@@ -262,12 +268,14 @@ int main (int argc, char* argv[]) {
             if (conn->want_write) {
                 pfd.events |= POLLOUT;
             }
-
+            LOG_INFO("Connection: wants " + want_read_write(pfd.events & POLLIN, pfd.events & POLLOUT));
             poll_args.push_back(pfd);
         }
 
         // wait for readiness
+        LOG_INFO("Calling poll!");
         int rv = poll(poll_args.data(), (nfds_t)poll_args.size(), -1);
+        LOG_INFO("Finished poll!");
         if (rv < 0 && errno == EINTR) {die("poll() failed!");
             continue;
         }
@@ -290,7 +298,7 @@ int main (int argc, char* argv[]) {
 
         // handle connection sockets
 
-        for (int i = 1; i < poll_args.size(); ++i) {
+        for (uint32_t i = 1; i < poll_args.size(); ++i) {
             uint32_t ready = poll_args[i].revents;
             Conn* conn = fd2conn[poll_args[i].fd];
             if (ready & POLLIN) {

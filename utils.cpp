@@ -6,8 +6,8 @@ void die (std::string str) {
     exit(1);
 }
 
-void print (std::string str) {
-    std::cout << str << std::endl;
+void print (std::string&& str) {
+    std::cout << std::endl << str << std::endl;
 }
 
 std::string get_client_info_string(const struct sockaddr_in& client_addr) {
@@ -32,4 +32,16 @@ std::string get_client_info_string_from_conn_fd(int fd) {
     getpeername(fd, (struct sockaddr*)&client_addr, &len);
 
     return get_client_info_string(client_addr);
+}
+
+std::string address_to_string(const void* addr) {
+    std::ostringstream oss;
+    oss << static_cast<const void *>(addr);
+    return oss.str();
+}
+
+std::string want_read_write(int read, int write) {
+    std::ostringstream oss;
+    oss << "Write: " << ((write > 0) ? "yes" : "no") << " | Read: " << ((read > 0) ? "yes" : "no");
+    return oss.str();
 }

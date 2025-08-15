@@ -1,5 +1,6 @@
 
 #include "protocol.h"
+#include <sstream>
 
 /**
  * @brief Reads all n bytes from fd to buf, uses read().
@@ -10,14 +11,22 @@
 int32_t read_full (int fd, char *buf, size_t n) {
 
     while (n > 0) {
+        LOG_INFO("Now calling read()");
         ssize_t rv = read(fd, buf, n);
+        LOG_INFO("Now read() Finished");
         if (rv <= 0) {
             return -1; // error
         }
 
         assert((size_t)rv <= n);
+        assert((size_t)rv > 0);
+
+        LOG_INFO("[read_full] Updating buf from: " + address_to_string(buf));
         buf += rv;
+        LOG_INFO("to: " + address_to_string(buf));
+        LOG_INFO("[read_full] Updating n from: " + std::to_string(n));
         n -= (size_t)rv;
+        LOG_INFO("to: " + std::to_string(n));
     }
 
     return 0;

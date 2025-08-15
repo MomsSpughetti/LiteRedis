@@ -9,6 +9,11 @@
 #include <iomanip>
 
 enum class LogLevel { INFO = 0, WARNING = 1, ERROR = 2 };
+struct Color {
+    static constexpr const char* RED   = "\033[31m";
+    static constexpr const char* GREEN = "\033[32m";
+    static constexpr const char* RESET = "\033[0m";
+};
 
 class SimpleLogger {
 public:
@@ -21,7 +26,7 @@ public:
         minLevel_ = level;
     }
 
-    void log(LogLevel level, const std::string& msg) {
+    void log(LogLevel level, const std::string& msg, const std::string color) {
         if (level < minLevel_) return;  // Skip if below threshold
 
         std::lock_guard<std::mutex> lock(mutex_);
@@ -30,8 +35,10 @@ public:
         auto time = std::chrono::system_clock::to_time_t(now);
         auto tm = *std::localtime(&time);
 
-        std::cout << "[" << std::put_time(&tm, "%F %T") << "] "
+        std::cout << color 
+                  << "[" << std::put_time(&tm, "%F %T") << "] "
                   << "[" << levelToString(level) << "] "
+                  << Color::RESET
                   << msg << "\n";
     }
 
@@ -50,9 +57,9 @@ private:
     }
 };
 
-#define LOG_INFO(msg)    SimpleLogger::instance().log(LogLevel::INFO, msg)
-#define LOG_WARNING(msg) SimpleLogger::instance().log(LogLevel::WARNING, msg)
-#define LOG_ERROR(msg)   SimpleLogger::instance().log(LogLevel::ERROR, msg)
+#define LOG_INFO(msg)    SimpleLogger::instance().log(LogLevel::INFO, msg, Color::GREEN)
+#define LOG_WARNING(msg) SimpleLogger::instance().log(LogLevel::WARNING, msg, Color::RESET)
+#define LOG_ERROR(msg)   SimpleLogger::instance().log(LogLevel::ERROR, msg, Color::RED)
 
 #endif
 
